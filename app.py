@@ -9,6 +9,7 @@ import fonts
 import save_pil
 from canvas_frame import CanvasFrame
 from logo_frame import LogoFrame
+from png_logo_frame import PNGLogoFrame
 import shutil
 
 NORM_FONT = ('Arial', 12)
@@ -43,7 +44,7 @@ class App(Tk):
         self.config(menu=self.menu)  # configures and displays the menu at top of the
         self.file_menu = Menu(self.menu)  # creates submenu, a menu object - associated
         self.menu.add_cascade(label="File", menu=self.file_menu)  # adds cascading menu
-        self.file_menu.add_command(label="Add Image", command=self.browse_files)  # adds a menu item to
+        self.file_menu.add_command(label="Add Image", command=lambda: self.browse_files(self.image_folder))  # adds a menu item to
         self.file_menu.add_separator()  # adds horizontal seperator between menu
         self.file_menu.add_command(label="Exit", command=self.quit)  # adds an exit
 
@@ -61,17 +62,17 @@ class App(Tk):
         self.tab1 = ttk.Frame(self.tab_control)
         self.tab2 = ttk.Frame(self.tab_control)
         self.tab_control.add(self.tab1, text="Text Logo")
-        self.tab_control.add(self.tab2, text="tester")
+        self.tab_control.add(self.tab2, text="PNG logo")
         self.tab_control.grid(row=2, column=0, columnspan=2)
 
         # logo functionality frame
         self.logo_frame = LogoFrame(self, self.tab1)
-        self.logo_frame_2 = LogoFrame(self, self.tab2)
+        self.png_logo_frame = PNGLogoFrame(self, self.tab2)
         # self.logo_frame = LogoFrame(self)
 
 
         style = ttk.Style()
-        style.configure("TNotebook", borderwidth=0, tabposition='nw')
+        style.configure("TNotebook", tabposition='nw')
 
 
         self.top_frame = Frame(self, padx=20, pady=10)
@@ -85,7 +86,7 @@ class App(Tk):
 
         self.load_file_button = Button(self.top_frame, text="Load Images", fg="black",
                                        font=BOLD_FONT,
-                                       command=self.browse_files)
+                                       command=lambda: self.browse_files(self.image_folder))
         self.load_file_button.grid(row=0, column=0)
 
 
@@ -94,7 +95,7 @@ class App(Tk):
         self.select_file_label.grid(row=0, column=1, sticky='e')
 
         # Option menu to select file ------------------
-        self.img_files = self.get_file_names()
+        self.img_files = self.get_file_names(self.image_folder)
         self.option_var = StringVar(self)
         self.option_var.set("None Selected")
         self.file_option = OptionMenu(self.top_frame,
@@ -140,31 +141,43 @@ class App(Tk):
             self.frame1.activate_button(choice)
 
 
-    def get_file_names(self):
+
+    def get_file_names(self, folder):
+        """
+        could make this used for both image folder and png folder
+        """
         files = []
         # get image files if directory exists
-        if os.path.isdir(self.image_folder):
-            for file in os.listdir(self.image_folder):
+        if os.path.isdir(folder):
+            for file in os.listdir(folder):
                 files.append(file)
         # create directory if does not exist
         else:
-            os.mkdir(self.image_folder)
+            os.mkdir(folder)
         return files
 
 
-    def browse_files(self):
+
+    def browse_files(self, folder):
         filename = filedialog.askopenfile(initialdir="./",
                                           title="Select a file")
 
-        supported_extensions =["JPEG", "JPG", "PNG", "GIF", "BMP", "TIFF", "ICO", "WEBP", "PPM", "PDF"]
-        supported_extensions = [ext.lower() for ext in supported_extensions]
-        if filename.name.split(".")[1].lower() in supported_extensions:
-            source_path = filename.name
-            destination = f"{self.image_folder}/{source_path.split('/')[-1]}"
-            shutil.copy(source_path, destination)
+        if folder == self.image_folder:
+            supported_extensions =["JPEG", "JPG", "PNG", "GIF", "BMP", "TIFF", "ICO", "WEBP", "PPM", "PDF"]
+            supported_extensions = [ext.lower() for ext in supported_extensions]
+            if filename.name.split(".")[1].lower() in supported_extensions:
+                source_path = filename.name
+                destination = f"{self.image_folder}/{source_path.split('/')[-1]}"
+                shutil.copy(source_path, destination)
 
-        self.img_files = self.get_file_names()
-        self.update_file_option_menu()
+            self.img_files = self.get_file_names(self.image_folder)
+            self.update_file_option_menu()
+        else:
+            if filename.name.split(".")[1].lower() == 'png':
+                source_path = filename.name
+                destination = f"{folder}/{source_path.split('/')[-1]}"
+                shutil.copy(source_path, destination)
+
 
 
     def update_file_option_menu(self):
