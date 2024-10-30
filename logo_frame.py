@@ -15,8 +15,8 @@ class LogoFrame(Frame):
         super().__init__(parent)
         self.parent = parent
 
-        self.grid(row=2, column=0, columnspan=2#, sticky='n'
-                    )
+        self.grid(row=2, column=0, columnspan=2, sticky="nsew",
+                    padx=85)
         #self.config(padx=20)
         self.pack_propagate(False)
 

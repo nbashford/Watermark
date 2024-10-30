@@ -1,19 +1,4 @@
-"""
-TODO 1: add mechanism to add img files to application
-TODO 2: add way to add logo to image and change the orientation placement
 
-self.canvas.create_text(100,10,fill="darkblue",font="Times 20 italic bold",
-                        text="Click the bubbles that are multiples of two.")
- - therefore -
- def add_logo(text, font, position, colour):
-- where to place - within Canvas frame
-
-- called by root
-self.canvas.add_logo()
-
-- called by `logo frame
-self.parent.add_to_canvas(text, font, position, colour)
-"""
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
@@ -75,28 +60,54 @@ class App(Tk):
         self.logo_frame = LogoFrame(self)
 
 
-        # Label to select file -----------------------
 
 
-        self.load_file_button = Button(self, text="Load Images", fg="black",
+
+        self.top_frame = Frame(self, padx=20, pady=10)
+        self.top_frame.grid(row=0, column=0, columnspan=2, sticky="nsew")
+        self.top_frame.pack_propagate(False)
+
+        self.top_frame.grid_columnconfigure(0, weight=1)
+        self.top_frame.grid_columnconfigure(1, weight=1)
+        self.top_frame.grid_columnconfigure(2, weight=1)
+        self.top_frame.grid_columnconfigure(3, weight=1)
+
+        self.load_file_button = Button(self.top_frame, text="Load Images", fg="black",
+                                       font=BOLD_FONT,
                                        command=self.browse_files)
         self.load_file_button.grid(row=0, column=0)
 
+
+        # Label to select file -----------------------
+        self.select_file_label = Label(self.top_frame, text="Select File to Edit:", fg='black', font=NORM_FONT)
+        self.select_file_label.grid(row=0, column=1, sticky='e')
 
         # Option menu to select file ------------------
         self.img_files = self.get_file_names()
         self.option_var = StringVar(self)
         self.option_var.set("None Selected")
-        self.file_option = OptionMenu(self,
+        self.file_option = OptionMenu(self.top_frame,
                                       self.option_var,
                                       value="None Selected",
                                       command=self.frame_to_load
                                       )
-        self.file_option.grid(row=0, column=1, padx=5, pady=5, sticky="w")
+        self.file_option.grid(row=0, column=2, padx=5, pady=5, sticky="w")
         if len(self.img_files) > 0:
             self.update_file_option_menu()
 
 
+        # Help Button
+        self.help_button = Button(self.top_frame, text="Help", fg='black', font=NORM_FONT,
+                                  command=self.show_help)
+        self.help_button.grid(row=0, column=3)
+
+
+    def show_help(self):
+        messagebox.showinfo(title="Information",
+                            message="1. Add Image Files to the image_folder, or press 'Load Images' button."
+                                    "\n\n2. Select file and display with Load Selected File button"
+                                    "\n\n3. Add Logo Text in entry box, then select all drop down options"
+                                    " for Logo placement and style before adding logo and saving image.")
 
 
     def frame_to_load(self, choice):
