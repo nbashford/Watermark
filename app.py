@@ -35,7 +35,7 @@ class App(Tk):
         self.current_img = None
         self.image_folder = "./image_folder"
 
-        self.frame_dimensions = 800, 600
+        self.frame_dimensions = 800, 580
 
 
         # App Menu
@@ -56,11 +56,22 @@ class App(Tk):
         # Canvas Frame - to place image
         self.canvas = CanvasFrame(self)
 
+
+        self.tab_control = ttk.Notebook(self)
+        self.tab1 = ttk.Frame(self.tab_control)
+        self.tab2 = ttk.Frame(self.tab_control)
+        self.tab_control.add(self.tab1, text="Text Logo")
+        self.tab_control.add(self.tab2, text="tester")
+        self.tab_control.grid(row=2, column=0, columnspan=2)
+
         # logo functionality frame
-        self.logo_frame = LogoFrame(self)
+        self.logo_frame = LogoFrame(self, self.tab1)
+        self.logo_frame_2 = LogoFrame(self, self.tab2)
+        # self.logo_frame = LogoFrame(self)
 
 
-
+        style = ttk.Style()
+        style.configure("TNotebook", borderwidth=0, tabposition='nw')
 
 
         self.top_frame = Frame(self, padx=20, pady=10)

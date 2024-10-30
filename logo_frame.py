@@ -11,12 +11,14 @@ BOLD_FONT = ('Arial', 12, 'bold')
 
 
 class LogoFrame(Frame):
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.parent = parent
+    def __init__(self, root, tab):
+        super().__init__(tab)
+        self.parent = root
 
-        self.grid(row=2, column=0, columnspan=2, sticky="nsew",
-                    padx=85)
+        self.pack(fill='both', expand=True)
+
+        # self.grid(row=2, column=0, columnspan=2, sticky="nsew",
+        #             padx=85)
         #self.config(padx=20)
         self.pack_propagate(False)
 

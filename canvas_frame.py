@@ -28,32 +28,21 @@ class CanvasFrame(Canvas):
         self.inverse_aspect_ratio = None
         self.canvas_image_text = None
 
-        # self.config(width=400, height=270, highlightthickness=1, border=1)
-        # self.config(background='blue')
-
     def add_image(self, pil_image, max_width=800, max_height=600):
 
         self.PIL_image = pil_image
         # Calculate aspect ratio and get new height and width for the image
         aspect_ratio = min(max_width / pil_image.width, max_height / pil_image.height)
         self.inverse_aspect_ratio = max(pil_image.width/max_width, pil_image.height / max_height)
-        # print(aspect_ratio)
-        # print(pil_image.width/max_width)
-        # print(pil_image.height / max_height)
         new_width = int(pil_image.width * aspect_ratio)
         new_height = int(pil_image.height * aspect_ratio)
 
         # Resize image
         resized_image = pil_image.resize((new_width, new_height), Image.LANCZOS)
-        # self.PIL_image = resized_image  # store the PIL image
-        # print(f"Width PIL Image: {resized_image.width}\nHeight PIL Image: {resized_image.height}")
-        # print(new_width, new_height)
         tk_image = ImageTk.PhotoImage(resized_image)
         self.tk_image = tk_image  # store the Tkinter canvas image
-        # print(f"Width Tkinter Image: {tk_image.width()}\nHeight Tkinter Image: {tk_image.height()}")
 
         # Display the image on the canvas
-        #self.create_image(max_width // 2, max_height // 2, image=tk_image)
         self.create_image(new_width // 2, new_height // 2, image=tk_image)
 
         # Adjust canvas size to match max dimensions
@@ -66,10 +55,6 @@ class CanvasFrame(Canvas):
         self.positions['Bottom left'] = (width*0.1, height*0.9)
         self.positions["Top right"] = (width*0.9, height*0.1)
         self.positions["Bottom right"] = (width*0.9, height*0.9)
-
-
-
-
 
     def add_logo(self, text, font, position, colour, size):
 
@@ -95,9 +80,6 @@ class CanvasFrame(Canvas):
         draw_text.text((self.positions[position][0] * self.inverse_aspect_ratio,
                         self.positions[position][1] * self.inverse_aspect_ratio),
                        text, rgb, anchor="mm", font=font)
-
-        #self.PIL_image_plus_text.save('./edited_images/sample-out.jpg')
-
 
     def remove_logo(self):
         # remove logo from canvas image
