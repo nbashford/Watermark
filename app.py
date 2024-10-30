@@ -17,10 +17,14 @@ self.parent.add_to_canvas(text, font, position, colour)
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
+from tkinter import filedialog
 import os
 from PIL import Image, ImageTk, ImageFont, ImageDraw, ImageColor
 import fonts
 import save_pil
+from canvas_frame import CanvasFrame
+from logo_frame import LogoFrame
+import shutil
 
 NORM_FONT = ('Arial', 12)
 BOLD_FONT = ('Arial', 12, 'bold')
@@ -29,10 +33,11 @@ BOLD_FONT = ('Arial', 12, 'bold')
 class App(Tk):
     def __init__(self):
         super().__init__()
+
         # Root set up -------------------------------
         self.title("Add logo to image app")
         self.minsize(width=1000, height=800)
-        self.config(padx=5, pady=5)
+        self.config(padx=10, pady=10)
 
         # Configure grid rows and columns to expand
         self.grid_rowconfigure(0, weight=1)
@@ -41,12 +46,27 @@ class App(Tk):
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
+        # for deciding if to switch between frame1 and canvas frame
         self.current_img = None
+        self.image_folder = "./image_folder"
+
+        self.frame_dimensions = 800, 600
+
+
+        # App Menu
+        self.menu = Menu(self)  # creates Menu object - associated with application
+        self.config(menu=self.menu)  # configures and displays the menu at top of the
+        self.file_menu = Menu(self.menu)  # creates submenu, a menu object - associated
+        self.menu.add_cascade(label="File", menu=self.file_menu)  # adds cascading menu
+        self.file_menu.add_command(label="Add Image", command=self.browse_files)  # adds a menu item to
+        self.file_menu.add_separator()  # adds horizontal seperator between menu
+        self.file_menu.add_command(label="Exit", command=self.quit)  # adds an exit
+
 
 
         # FRAMES -------------------------------------
         # Frame one - initial frame to load image
-        self.frame1 = FrameOne(self)
+        self.frame1 = FrameOne(self, self.frame_dimensions)
 
         # Canvas Frame - to place image
         self.canvas = CanvasFrame(self)
@@ -56,9 +76,12 @@ class App(Tk):
 
 
         # Label to select file -----------------------
-        self.label = Label(self, text="Select file to load: ",
-                           fg="black", font=NORM_FONT)
-        self.label.grid(row=0, column=0, padx=5, pady=5, sticky="e")  # still to add
+
+
+        self.load_file_button = Button(self, text="Load Images", fg="black",
+                                       command=self.browse_files)
+        self.load_file_button.grid(row=0, column=0)
+
 
         # Option menu to select file ------------------
         self.img_files = self.get_file_names()
@@ -66,11 +89,12 @@ class App(Tk):
         self.option_var.set("None Selected")
         self.file_option = OptionMenu(self,
                                       self.option_var,
-                                      #self.img_files[0],
-                                      *self.img_files,
+                                      value="None Selected",
                                       command=self.frame_to_load
                                       )
         self.file_option.grid(row=0, column=1, padx=5, pady=5, sticky="w")
+        if len(self.img_files) > 0:
+            self.update_file_option_menu()
 
 
 
@@ -86,7 +110,7 @@ class App(Tk):
         if file_name != self.current_img:
             # remove canvas frame and logo frame
             self.remove_widget_grid(self.canvas)
-            self.remove_widget_grid(self.logo_frame)
+            #self.remove_widget_grid(self.logo_frame)
             # load frame 1
             self.add_widget_grid(widget=self.frame1)
             # self.load_image()
@@ -94,15 +118,39 @@ class App(Tk):
             self.frame1.activate_button(choice)
 
 
-
-
-    def get_file_names(self, folder_path="./image_folder"):
+    def get_file_names(self):
         files = []
-        if os.path.isdir(folder_path):
-            for file in os.listdir(folder_path):
+        # get image files if directory exists
+        if os.path.isdir(self.image_folder):
+            for file in os.listdir(self.image_folder):
                 files.append(file)
-
+        # create directory if does not exist
+        else:
+            os.mkdir(self.image_folder)
         return files
+
+
+    def browse_files(self):
+        filename = filedialog.askopenfile(initialdir="./",
+                                          title="Select a file")
+
+        supported_extensions =["JPEG", "JPG", "PNG", "GIF", "BMP", "TIFF", "ICO", "WEBP", "PPM", "PDF"]
+        supported_extensions = [ext.lower() for ext in supported_extensions]
+        if filename.name.split(".")[1].lower() in supported_extensions:
+            source_path = filename.name
+            destination = f"{self.image_folder}/{source_path.split('/')[-1]}"
+            shutil.copy(source_path, destination)
+
+        self.img_files = self.get_file_names()
+        self.update_file_option_menu()
+
+
+    def update_file_option_menu(self):
+        menu = self.file_option["menu"]
+        menu.delete(0, "end")
+        for file in self.img_files:
+            menu.add_command(label=file, command=lambda value=file: (self.option_var.set(value), self.frame_to_load(value)))
+
 
     def remove_widget_grid(self, widget):
         widget.grid_remove()
@@ -121,15 +169,7 @@ class App(Tk):
         return file_name
 
     def load_image(self):
-        """
-        1. get file name
-        2. unpack the Frame_await_image
-        3. pack the canva frame
-        4. add the image to the canva frame
-        my_image = PhotoImage(file='tomato.png')
-        canvas_image = canvas.create_image(250, 250, image=my_image).
-        5. configure to full size
-        """
+
         # 1. get file name
         file_name = self.get_selected_file()
         self.current_img = file_name
@@ -165,14 +205,16 @@ class App(Tk):
 
 
 class FrameOne(Frame):
-    def __init__(self, parent):
+    def __init__(self, parent, dimensions):
         super().__init__(parent)
+        self.width = dimensions[0]
+        self.height = dimensions[1]
 
         # link to the root
         self.parent = parent
 
         # configure Frame setup - - -- - - - - -
-        self.config(width=650, height=400,
+        self.config(width=self.width, height=self.height-50,
                     #padx=50, pady=50,
                     bg='lightgrey')
         self.grid(row=1, column=0, columnspan=2,
@@ -191,9 +233,11 @@ class FrameOne(Frame):
                                         # activebackground='blue',
                                         state=DISABLED,
                                         font=BOLD_FONT,
-                                        command=self.parent.load_image)
+                                        command=self.parent.load_image,
+                                        # command=self.parent.browse_files
+                                        )
 
-        self.load_image_button.pack(pady=100)
+        self.load_image_button.place(relx=0.5, rely=0.5, anchor='center')
 
 
     def activate_button(self, choice):
@@ -202,351 +246,8 @@ class FrameOne(Frame):
 
 
 
-class CanvasFrame(Canvas):
-    def __init__(self, parent):
-        super().__init__(parent)
-
-        # self.config(borderwidth="2")
-        self.parent = parent
-        self.positions = {
-            "Top left": None,
-            "Top right": None,
-            "Bottom left": None,
-            "Bottom right": None
-        }
-
-        self.tk_image = None
-        self.PIL_image = None
-        self.PIL_image_plus_text = None
-        self.inverse_aspect_ratio = None
-        self.canvas_image_text = None
-
-        # self.config(width=400, height=270, highlightthickness=1, border=1)
-        # self.config(background='blue')
-
-    def add_image(self, pil_image, max_width=800, max_height=600):
-
-        self.PIL_image = pil_image
-        # Calculate aspect ratio and get new height and width for the image
-        aspect_ratio = min(max_width / pil_image.width, max_height / pil_image.height)
-        self.inverse_aspect_ratio = max(pil_image.width/max_width, pil_image.height / max_height)
-        # print(aspect_ratio)
-        # print(pil_image.width/max_width)
-        # print(pil_image.height / max_height)
-        new_width = int(pil_image.width * aspect_ratio)
-        new_height = int(pil_image.height * aspect_ratio)
-
-        # Resize image
-        resized_image = pil_image.resize((new_width, new_height), Image.LANCZOS)
-        # self.PIL_image = resized_image  # store the PIL image
-        # print(f"Width PIL Image: {resized_image.width}\nHeight PIL Image: {resized_image.height}")
-        # print(new_width, new_height)
-        tk_image = ImageTk.PhotoImage(resized_image)
-        self.tk_image = tk_image  # store the Tkinter canvas image
-        # print(f"Width Tkinter Image: {tk_image.width()}\nHeight Tkinter Image: {tk_image.height()}")
-
-        # Display the image on the canvas
-        #self.create_image(max_width // 2, max_height // 2, image=tk_image)
-        self.create_image(new_width // 2, new_height // 2, image=tk_image)
-
-        # Adjust canvas size to match max dimensions
-        self.config(width=new_width, height=new_height)
-
-        self.update_positions(new_width, new_height)
-
-    def update_positions(self, width, height):
-        self.positions["Top left"] = (width*0.1, height*0.1)
-        self.positions['Bottom left'] = (width*0.1, height*0.9)
-        self.positions["Top right"] = (width*0.9, height*0.1)
-        self.positions["Bottom right"] = (width*0.9, height*0.9)
-
-
-
-
-
-    def add_logo(self, text, font, position, colour, size):
-
-        self.remove_logo()
-
-        # Add to TKinter Canvas Image
-        self.canvas_image_text = self.create_text(self.positions[position][0], self.positions[position][1],
-                         fill=colour, font=(font, size, "italic"), text=text)
-
-        # Add to PIL Image (Hidden) - for saving
-        # Make a Copy of the PIL image - since no way to remove text from PIL image
-        self.PIL_image_plus_text = self.PIL_image.copy()
-        # Set up drawing on image
-        draw_text = ImageDraw.Draw(self.PIL_image_plus_text)
-        # Get the ttf file:
-        ttf_fonts = fonts.FontTffFiles()
-        ttf_file = ttf_fonts.get_font_ttf(font)
-        # set up font and calc size of font relative to aspect ratio
-        font = ImageFont.truetype(ttf_file, size * self.inverse_aspect_ratio)
-        # get the R,G,B for the colour
-        rgb = ImageColor.getrgb(colour)
-        # draw the text on the PIL image - relative position of tkinter image to PIL image (aspect ratio)
-        draw_text.text((self.positions[position][0] * self.inverse_aspect_ratio,
-                        self.positions[position][1] * self.inverse_aspect_ratio),
-                       text, rgb, anchor="mm", font=font)
-
-        #self.PIL_image_plus_text.save('./edited_images/sample-out.jpg')
-
-
-    def remove_logo(self):
-        # remove logo from canvas image
-        if self.canvas_image_text:
-            self.delete(self.canvas_image_text)
-
-    def get_PIL_image(self):
-        return self.PIL_image_plus_text
-
-
-class LogoFrame(Frame):
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.parent = parent
-
-        #self.config(padx=20)
-        self.pack_propagate(False)
-
-        self.grid_rowconfigure(0, weight=1)
-        self.grid_rowconfigure(1, weight=1)
-        self.grid_rowconfigure(2, weight=1)
-        self.grid_rowconfigure(3, weight=1)
-        self.grid_rowconfigure(4, weight=1)
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_columnconfigure(1, weight=1)
-        self.grid_columnconfigure(2, weight=1)
-        self.grid_columnconfigure(3, weight=1)
-        self.grid_columnconfigure(4, weight=1)
-
-        self.logo = None
-
-        # First row - Add logos or select existing logo,
-        # - change font and colour
-        self.logo_label = Label(self, text="Add an image logo:", fg='black',
-                                font=NORM_FONT)
-        self.logo_label.grid(row=0, column=0, pady=10, padx=10)
-
-        self.logo_input = Entry(self, width=14, fg='black', bg="lightgrey")
-        self.logo_input.grid(row=0, column=1, pady=10, padx=10, sticky='w')
-        self.logo_input.bind("<Return>", lambda event: self.update_logo_list())
-
-
-        self.update_logo_button = Button(self, text="Add logo", fg='black', state=DISABLED,
-                                         command=self.update_logo_list)
-        self.update_logo_button.grid(row=0, column=2, padx=10, pady=10, sticky="w")
-
-        self.logo_input.bind("<Key>", lambda e: self.update_logo_button.config(state=NORMAL))
-
-
-        # second row ----------------------------
-        self.seperator = ttk.Separator(self, orient="horizontal")
-        self.seperator.grid(row=1, columnspan=5, sticky="ew", pady=10)
-
-
-
-
-        # third row --------------------
-
-        # LOGO Selection
-        self.logos = []
-        self.logo_var = StringVar(self)
-        self.logo_var.set("Select Logo")
-        self.logo_choice = OptionMenu(self,
-                                        self.logo_var,
-                                        value="Please add Logo above",
-                                        *self.logos,
-                                        command=self.activate_logo_button
-                                      )
-        self.logo_choice.grid(row=2, column=0, padx=10, pady=10)
-        self.logo_choice.config(width=10)
-
-
-        # logo PLACEMENT
-        self.orientations = ["Top left", "Top right", "Bottom right", "Bottom left"]
-        self.orientation_var = StringVar(self)
-        self.orientation_var.set("Logo Placement")
-        self.logo_orientation = OptionMenu(self,
-                                           self.orientation_var,
-                                           *self.orientations,
-                                           command=self.activate_logo_button
-                                           )
-        self.logo_orientation.grid(row=2, column=1, padx=10, pady=10)
-        self.logo_orientation.config(width=10)
-
-
-        # logo COLOUR
-        self.colors = ["blue", "grey", "red", "green", "yellow", "Orange"]
-        self.color_var = StringVar(self)
-        self.color_var.set("Select Colour")
-        self.colour_choice = OptionMenu(self,
-                                        self.color_var,
-                                        *self.colors,
-                                        command=self.activate_logo_button
-                                        )
-        self.colour_choice.grid(row=2, column=2, padx=10, pady=10)
-        self.colour_choice.config(width=10)
-
-
-        # logo FONT
-        self.fonts = ["Arial", "Courier", "Georgia", "Verdana", "Comic Sans MS", "Times New Roman"]
-        self.font_var = StringVar(self)
-        self.font_var.set("Select Font")
-        self.font_choice = OptionMenu(self,
-                                        self.font_var,
-                                        *self.fonts,
-                                        command=self.activate_logo_button
-                                      )
-        self.font_choice.grid(row=2, column=3, padx=10, pady=10)
-        self.font_choice.config(width=10)
-
-
-        # logo SIZE
-        self.sizes = ["10", "11", "12", "13", "14", "15", "16", "17", "18"]
-        self.size_var = StringVar(self)
-        self.size_var.set("Select Font")
-        self.size_choice = OptionMenu(self,
-                                        self.size_var,
-
-                                        *self.sizes,
-                                        command=self.activate_logo_button
-                                      )
-        self.size_choice.grid(row=2, column=4, padx=10, pady=10)
-        self.size_choice.config(width=10)
-
-
-        # fourth row --------------------------
-
-        self.second_seperator = ttk.Separator(self, orient="horizontal")
-        self.second_seperator.grid(row=3, columnspan=5, sticky="ew", pady=10)
-
-
-        # Fifth row ---------------------------
-
-        # add logo label and button
-        self.add_logo_button = Button(self,
-                                      text="Add Logo",
-                                      fg='black',
-                                      bg='green',
-                                      # highlightbackground='green',
-                                      font=BOLD_FONT,
-                                      state=DISABLED,
-                                      command=self.get_logo_details)
-        self.add_logo_button.grid(row=4, column=0, padx=10, pady=10)
-
-
-        # save button to save image with logo
-        self.save_button = Button(self, text="Save Logo Image",
-                                  fg='black',
-                                  bg='blue',
-                                  font=BOLD_FONT,
-                                  state=DISABLED,
-                                  command=self.parent.save_image
-                                  )
-        self.save_button.grid(row=4, column=4)
-
-
-    def update_logo_list(self):
-        logo_name = self.logo_input.get()
-        if logo_name and logo_name not in self.logos:
-            self.logos.append(logo_name)
-            # Update OptionMenu
-            self.logo_var.set(logo_name)  # Set to the latest logo added (optional)
-            # Clear and recreate the options in the OptionMenu
-            self.logo_choice['menu'].delete(0, 'end')  # Clear current options
-            for logo in self.logos:
-                self.logo_choice['menu'].add_command(label=logo, command=lambda value=logo: self.logo_var.set(value))
-            self.logo_input.delete("0", END)
-
-    def activate_logo_button(self, choice):
-        if (self.logo_var.get() in self.logos
-                and self.font_var.get() in self.fonts
-                and self.orientation_var.get() in self.orientations
-                and self.color_var.get() in self.colors
-                and self.size_var.get() in self.sizes):
-
-            self.add_logo_button.config(state=NORMAL, bg='green')
-
-
-    def get_logo_details(self):
-        # get the text, font, position, colour, size
-        position = self.orientation_var.get()
-        colour = self.color_var.get()
-        font = self.font_var.get()
-        text = self.logo_var.get()
-        size = int(self.size_var.get())
-        self.parent.add_to_canvas(text, font, position, colour, size)
-        self.save_button.config(state=NORMAL)
-
-
-
 if __name__ == "__main__":
 
     app = App()
     app.mainloop()
 
-
-"""
-HOW WILL I SAVE THE LOGO
-
-- need to get the current image after adding the logo 
-
-- need to also add the text to the (hidden) PIL image 
-- do this when adding the text to the tkinter image 
-
-- requires the .ttf fonts from MacOS 
-
-Common fonts
-/System/Library/Fonts
-Supplemental font package: 
-/System/Library/Fonts/Supplemental
-
-"""
-
-    # def load_image(self):
-    #     """
-    #     1. get file name
-    #     2. unpack the Frame_await_image
-    #     3. pack the canva frame
-    #     4. add the image to the canva frame
-    #     my_image = PhotoImage(file='tomato.png')
-    #     canvas_image = canvas.create_image(250, 250, image=my_image).
-    #     5. configure to full size
-    #     """
-    #     # 1. get file name
-    #     file_name = self.get_selected_file()
-    #     # 2. unpack the Frame_await_image
-    #     self.remove_widget_grid(self.frame1)
-    #     # 3. pack the canvas frame
-    #     self.add_widget_grid(self.canvas)
-    #     # 4. add the image to the canva frame
-    #     image_path = "./image_folder/" + file_name
-    #     pil_image = Image.open(image_path)
-    #
-    #     # Define maximum canvas size
-    #     max_width, max_height = 500, 400
-    #
-    #     # Calculate aspect ratio and get new height and width for the image
-    #     aspect_ratio = min(max_width / pil_image.width, max_height / pil_image.height)
-    #     new_width = int(pil_image.width * aspect_ratio)
-    #     new_height = int(pil_image.height * aspect_ratio)
-    #     # Resize image
-    #     resized_image = pil_image.resize((new_width, new_height), Image.LANCZOS)
-    #     tk_image = ImageTk.PhotoImage(resized_image)
-    #
-    #     # Display the image on the canvas
-    #     self.canvas.create_image(max_width // 2, max_height // 2, image=tk_image)
-    #
-    #     # Keep a reference to avoid garbage collection
-    #     self.canvas.image = tk_image
-    #
-    #     # Adjust canvas size to match max dimensions
-    #     self.canvas.config(width=max_width, height=max_height)
-    #
-    #     # tk_image = ImageTk.PhotoImage(pil_image)
-    #     # canvas_image = self.canvas.create_image(10, 10, image=tk_image)
-    #     # self.canvas.image = tk_image
-    #     # self.canvas.config(width=pil_image.width, height=pil_image.height)
-    #
-    #     # # # # - *******************
