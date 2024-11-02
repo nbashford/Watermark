@@ -161,22 +161,23 @@ class App(Tk):
     def browse_files(self, folder):
         filename = filedialog.askopenfile(initialdir="./",
                                           title="Select a file")
+        if filename:
 
-        if folder == self.image_folder:
-            supported_extensions =["JPEG", "JPG", "PNG", "GIF", "BMP", "TIFF", "ICO", "WEBP", "PPM", "PDF"]
-            supported_extensions = [ext.lower() for ext in supported_extensions]
-            if filename.name.split(".")[1].lower() in supported_extensions:
-                source_path = filename.name
-                destination = f"{self.image_folder}/{source_path.split('/')[-1]}"
-                shutil.copy(source_path, destination)
+            if folder == self.image_folder:
+                supported_extensions =["JPEG", "JPG", "PNG", "GIF", "BMP", "TIFF", "ICO", "WEBP", "PPM", "PDF"]
+                supported_extensions = [ext.lower() for ext in supported_extensions]
+                if filename.name.split(".")[1].lower() in supported_extensions:
+                    source_path = filename.name
+                    destination = f"{self.image_folder}/{source_path.split('/')[-1]}"
+                    shutil.copy(source_path, destination)
 
-            self.img_files = self.get_file_names(self.image_folder)
-            self.update_file_option_menu()
-        else:
-            if filename.name.split(".")[1].lower() == 'png':
-                source_path = filename.name
-                destination = f"{folder}/{source_path.split('/')[-1]}"
-                shutil.copy(source_path, destination)
+                self.img_files = self.get_file_names(self.image_folder)
+                self.update_file_option_menu()
+            else:
+                if filename.name.split(".")[1].lower() == 'png':
+                    source_path = filename.name
+                    destination = f"{folder}/{source_path.split('/')[-1]}"
+                    shutil.copy(source_path, destination)
 
 
 
@@ -221,13 +222,15 @@ class App(Tk):
         self.add_logo_frame(self.logo_frame)
         #self.add_logo_button.config(state=NORMAL)
 
-    def add_to_canvas(self, text, font, position, colour, size):
-        self.canvas.add_logo(text, font, position, colour, size)
+
+    def add_to_canvas(self, **kwargs):
+        self.canvas.add_logo(**kwargs)
+
 
     def save_image(self, overwrite=False):
+        # need to change so can work for either text or image logo
         pil_image = self.canvas.get_PIL_image()
-        file_name = self.get_selected_file()
-        save = save_pil.SaveImage(file_name, pil_image)
+        save = save_pil.SaveImage(self.get_selected_file(), pil_image)
         saved = save.save_image(overwrite)
         if not saved:
             overwrite = messagebox.askyesno(title="File already exists",
@@ -235,7 +238,8 @@ class App(Tk):
             if overwrite:
                 self.save_image(overwrite=overwrite)
 
-
+    def get_tk_pil_dimensions(self):
+        return self.canvas.get_img_dimensions()
 
 
 

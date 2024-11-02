@@ -157,7 +157,7 @@ class LogoFrame(Frame):
                                   width=10,
                                   font=BOLD_FONT,
                                   state=DISABLED,
-                                  command=self.parent.save_image
+                                  command=lambda: self.parent.save_image
                                   )
         self.save_button.grid(row=4, column=4)
 
@@ -191,6 +191,6 @@ class LogoFrame(Frame):
         font = self.font_var.get()
         text = self.logo_var.get()
         size = int(self.size_var.get())
-        self.parent.add_to_canvas(text, font, position, colour, size)
+        self.parent.add_to_canvas(text=text, font=font, position=position, colour=colour, size=size)
         self.save_button.config(state=NORMAL)
 
