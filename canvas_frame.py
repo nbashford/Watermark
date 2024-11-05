@@ -198,7 +198,7 @@ class CanvasFrame(Canvas):
         returns the dimensions of the tk and PIL image,
         :return: tuple of dimension tuples, or none if no img loaded
         """
-        if self.tk_image and self.PIL_image  # if image loaded
+        if self.tk_image and self.PIL_image:  # if image loaded
             tk_height = self.tk_image.height()
             tk_width = self.tk_image.width()
             tk_dims = (tk_width, tk_height)
